@@ -1,12 +1,13 @@
 # Context Resume CLI
 
-Context Resume lets you quickly resume work across Claude Code (`~/.claude`) and Codex CLI (`~/.codex`) by listing recent sessions for the current working directory, showing a short preview, and printing a ready-to-use resume prompt that points to the original `.jsonl` log.
+Context Resume lets you quickly resume work across Claude Code (`~/.claude`) and Codex CLI (`~/.codex`) by listing recent sessions for the current working directory, showing a detailed prompt history preview, and printing a ready-to-use bilingual (English/Chinese) resume prompt.
 
 ## Features
-- Merges Claude and Codex sessions for the current directory, sorted by recency (top 20).
-- Live preview of session content; title is taken from the first user message.
-- Press Enter to print a Chinese resume prompt containing the session file path (no extra formatting), so another agent can read the file directly.
-- Works locally; no network calls.
+- **Dual-Panel View**: Split view for Claude and Codex sessions; use `TAB` to switch.
+- **Detailed Preview**: Shows a list of user prompts from the selected session (truncated to 50 chars) at the top.
+- **Configurable Limit**: Use `-n <count>` to control how many sessions to load per source.
+- **Bilingual Output**: Prints both English and Chinese prompts pointing to the session file.
+- **Privacy First**: Works entirely locally; no network calls.
 
 ## Requirements
 - Node.js 18+ (tested with ESM build).
@@ -21,24 +22,23 @@ npm link      # optional, to install the global `context` command
 ## Usage
 From any project directory you want to resume:
 ```bash
-context
+context           # Load default 10 sessions per source
+context -n 20     # Load 20 sessions per source
 ```
-- Use arrow keys to select a session; preview shows truncated content (500 chars window).
-- Press Enter: the CLI writes a resume prompt with the absolute path to the session `.jsonl` and exits. Copy that prompt into your agent to restore context.
-- Flags: `-h/--help`, `-v/--version`.
+- Use **TAB** to switch between Claude and Codex panels.
+- Use **Arrow Keys** to select a session.
+- Preview at the top shows the sequence of user prompts.
+- Press **Enter** to print the resume prompts (with absolute paths) and exit.
 
 ## How it works
-- Claude: reads `~/.claude/projects/<encoded-path>/*.jsonl` where path is `/` replaced by `-`. Picks recent files by mtime, builds preview from user/assistant/system lines.
-- Codex: scans `~/.codex/sessions/**/*.jsonl`, filters files whose first line has `{"type":"session_meta","payload":{"cwd":<current cwd>}}`, and sorts by mtime. Preview currently focuses on user inputs.
-- Preview is truncated via a start/end window; full content is kept in the source file referenced in the prompt.
+- **Claude**: Reads `~/.claude/projects/<encoded-path>/*.jsonl`.
+- **Codex**: Scans `~/.codex/sessions/**/*.jsonl`, filters by `cwd` metadata.
+- **Prompt Extraction**: Parses the session files to extract user inputs for the preview, giving you a quick summary of "what was I doing?".
 
 ## Project layout
-- `src/index.tsx` – Commander entrypoint, renders Ink UI.
-- `src/ui/app.tsx` – Two-pane UI: list on the left, preview on the right; prints the resume prompt on selection.
-- `src/adapters/index.ts` – File parsers for Claude and Codex sessions.
-- `docs/context_structure_analysis.md` – Chinese write-up of `.claude` and `.codex` storage structure.
+- `src/index.tsx` – Entry point, handles CLI arguments.
+- `src/ui/app.tsx` – Ink UI with split panels and preview.
+- `src/adapters/index.ts` – File parsers and prompt extractors.
 
 ## Limitations
-- Codex parsing only pulls user messages for previews; assistant replies are not yet shown.
-- Scans up to 20 most recent sessions; very large histories in `.codex` may still be slow due to globbing.
-- No tests yet; run `npm run build` to verify types and emit `dist/`.
+- Codex scanning involves globbing which might be slow on very large histories.

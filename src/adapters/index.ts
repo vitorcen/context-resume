@@ -7,6 +7,7 @@ export interface SessionSummary {
   id: string;
   title: string;
   preview: string;
+  userPrompts: string[];
   timestamp: number;
   source: 'claude' | 'codex';
   path: string;
@@ -51,6 +52,7 @@ export async function getClaudeSessions(cwd: string, limit: number = 10): Promis
 
     let firstUserMessage = 'New Session';
     let fullContent = '';
+    const userPrompts: string[] = [];
 
     for (const line of lines) {
       try {
@@ -58,10 +60,14 @@ export async function getClaudeSessions(cwd: string, limit: number = 10): Promis
 
         // Try to find the first user message for the title
         if (data.type === 'user' && data.message?.content) {
-          if (firstUserMessage === 'New Session') {
-             firstUserMessage = typeof data.message.content === 'string'
+            const text = typeof data.message.content === 'string'
                 ? data.message.content
                 : (Array.isArray(data.message.content) ? data.message.content.map((c: any) => c.text || '').join(' ') : '');
+
+            userPrompts.push(text);
+
+          if (firstUserMessage === 'New Session') {
+             firstUserMessage = text;
           }
         }
 
@@ -89,6 +95,7 @@ export async function getClaudeSessions(cwd: string, limit: number = 10): Promis
       id: path.basename(file, '.jsonl'),
       title: firstUserMessage.slice(0, 50) + (firstUserMessage.length > 50 ? '...' : ''),
       preview,
+      userPrompts,
       timestamp: stats.mtimeMs,
       source: 'claude',
       path: filePath
@@ -157,6 +164,7 @@ export async function getCodexSessions(cwd: string, limit: number = 10): Promise
 
         let firstUserMessage = 'New Session';
         let fullContent = '';
+        const userPrompts: string[] = [];
 
         for (const line of lines) {
             try {
@@ -166,6 +174,8 @@ export async function getCodexSessions(cwd: string, limit: number = 10): Promise
                 if (data.type === 'response_item' && data.payload?.type === 'message' && data.payload.role === 'user') {
                     const contentArr = data.payload.content || [];
                     const text = contentArr.find((c: any) => c.type === 'input_text')?.text || '';
+
+                    userPrompts.push(text);
 
                     if (firstUserMessage === 'New Session' && text) {
                         firstUserMessage = text;
@@ -186,6 +196,7 @@ export async function getCodexSessions(cwd: string, limit: number = 10): Promise
             id: path.basename(filePath, '.jsonl'),
             title: firstUserMessage.slice(0, 50) + (firstUserMessage.length > 50 ? '...' : ''),
             preview,
+            userPrompts,
             timestamp: mtime,
             source: 'codex',
             path: filePath

@@ -16,10 +16,10 @@ export interface SessionSummary {
 // --- Claude Adapter ---
 
 function getClaudeEncodedPath(projectPath: string): string {
-  // Claude encodes paths by replacing / with -
+  // Claude encodes paths by replacing / and . with -
   // e.g. /home/user/project -> -home-user-project
-  // Note: It seems to start with -
-  return projectPath.replace(/\//g, '-');
+  // e.g. /path/v1.0 -> -path-v1-0
+  return projectPath.replace(/[\/\.]/g, '-');
 }
 
 export async function getClaudeSessions(cwd: string, limit: number = 10): Promise<SessionSummary[]> {

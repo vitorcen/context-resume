@@ -1,7 +1,7 @@
 {
-  "name": "context-resume",
+  "name": "@vitorcen/context-resume",
   "version": "1.0.0",
-  "description": "Context Resume CLI",
+  "description": "Context Resume CLI - Browse and mutually restore the conversation history of Claude Code and Codex",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -10,7 +10,28 @@
   "scripts": {
     "build": "tsc",
     "start": "tsc && node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude",
+    "codex",
+    "cli",
+    "context",
+    "history",
+    "resume",
+    "conversation",
+    "terminal"
+  ],
+  "author": "vitorcen",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "commander": "^14.0.2",

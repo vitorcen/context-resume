@@ -18,7 +18,25 @@ program
   .action(async (options) => {
     const cwd = process.cwd();
     const limit = parseInt(options.number, 10) || 10;
-    render(<App cwd={cwd} limit={limit} />);
+
+    let selectionOutput = '';
+
+    const app = render(
+      <App
+        cwd={cwd}
+        limit={limit}
+        onSubmit={(output) => {
+          selectionOutput = output;
+        }}
+      />
+    );
+
+    await app.waitUntilExit();
+
+    if (selectionOutput) {
+      app.clear();
+      process.stdout.write(selectionOutput);
+    }
   });
 
 program.parse(process.argv);

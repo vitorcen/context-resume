@@ -5,13 +5,17 @@ import React from 'react';
 import { render } from 'ink';
 import App from './ui/app.js';
 import path from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 const program = new Command();
 
 program
   .name('context')
   .description('Context Resume CLI')
-  .version('1.0.0', '-v, --version');
+  .version(version, '-v, --version');
 
 program
   .option('-n, --number <count>', 'Number of sessions to show per source (claude/codex)', '10')

@@ -2,12 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import SelectInput from 'ink-select-input';
 import { SessionSummary, getClaudeSessions, getCodexSessions } from '../adapters/index.js';
+import stringWidth from 'string-width';
 
 interface Item {
 	label: string;
 	value: string;
 	session: SessionSummary;
 }
+
+// Truncate by display width (handles CJK characters correctly)
+const truncateByWidth = (str: string, maxWidth: number): string => {
+	if (stringWidth(str) <= maxWidth) return str;
+
+	let result = '';
+	let width = 0;
+
+	for (const char of str) {
+		const charWidth = stringWidth(char);
+		if (width + charWidth > maxWidth) break;
+		result += char;
+		width += charWidth;
+	}
+
+	return result + '...';
+};
 
 const App = ({
 	cwd,
@@ -53,17 +71,25 @@ const App = ({
 			// Sort by timestamp desc
 			const sortFn = (a: SessionSummary, b: SessionSummary) => b.timestamp - a.timestamp;
 
-			const cItems = claudeSessions.sort(sortFn).map(s => ({
-				label: `${s.title} (${new Date(s.timestamp).toLocaleDateString()})`,
-				value: s.id,
-				session: s
-			}));
+			const cItems = claudeSessions.sort(sortFn).map(s => {
+				const title = s.title.replace(/\n/g, ' ').trim();
+				const truncatedTitle = truncateByWidth(title, 45);
+				return {
+					label: `${truncatedTitle} (${new Date(s.timestamp).toLocaleDateString()})`,
+					value: s.id,
+					session: s
+				};
+			});
 
-			const cxItems = codexSessions.sort(sortFn).map(s => ({
-				label: `${s.title} (${new Date(s.timestamp).toLocaleDateString()})`,
-				value: s.id,
-				session: s
-			}));
+			const cxItems = codexSessions.sort(sortFn).map(s => {
+				const title = s.title.replace(/\n/g, ' ').trim();
+				const truncatedTitle = truncateByWidth(title, 45);
+				return {
+					label: `${truncatedTitle} (${new Date(s.timestamp).toLocaleDateString()})`,
+					value: s.id,
+					session: s
+				};
+			});
 
 			setClaudeItems(cItems);
 			setCodexItems(cxItems);
@@ -94,23 +120,23 @@ const App = ({
 	// Filter out empty prompts
 	const prompts = (currentItem?.session.userPrompts || []).filter(p => p && p.trim().length > 0);
 
-	// Truncate prompts logic
+	// Truncate prompts logic (~60 display width: ~120 ASCII chars or ~60 CJK chars)
 	const previewText = prompts.map((p, i) => {
 		const clean = p.replace(/\n/g, ' ').trim();
-		const truncated = clean.length > 50 ? clean.slice(0, 50) + '...' : clean;
+		const truncated = truncateByWidth(clean, 120);
 		return `${i + 1}. ${truncated}`;
 	}).join('\n');
 
 	return (
-		<Box flexDirection="column" height={35}>
+		<Box flexDirection="column">
 			{/* Top Area: Preview */}
-			<Box height={12} borderStyle="single" flexDirection="column" paddingX={1}>
+			<Box borderStyle="single" flexDirection="column" paddingX={1}>
 				<Text bold underline>Preview (User Prompts)</Text>
 				<Text>{previewText || 'Select a session to view prompts'}</Text>
 			</Box>
 
 			{/* Bottom Area: Split Panels */}
-			<Box flexDirection="row" height={20}>
+			<Box flexDirection="row" minHeight={20}>
 				{/* Claude Panel */}
 				<Box width="50%" borderStyle={activePanel === 'claude' ? 'double' : 'single'} flexDirection="column" borderColor={activePanel === 'claude' ? 'green' : 'white'}>
 					<Text bold underline color={activePanel === 'claude' ? 'green' : 'white'}>Claude Sessions</Text>

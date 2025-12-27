@@ -147,7 +147,23 @@ const App = ({
 		const englishPrompt = `Here's a context file ${selectedItem.session.path} from the user's previous operations. Analyze what the user was doing. Then use TodoWrite to list what might be incomplete, and what needs to be done next (if mentioned in the context), otherwise wait for user instructions.`;
 		const chinesePrompt = `这里有份上下文 ${selectedItem.session.path} ，是用户曾经的操作。你分析下用户在做什么。然后用TodoWrite列出可能没做完的事情，和接下来要的事情（如果上下文中有提到），如果没有就等待用户指令。`;
 
-		const output = `\n\n${englishPrompt}\n\n${chinesePrompt}\n\n`;
+		const source = selectedItem.session.source;
+		const getIndexIn = (items: Item[]) => items.findIndex(i => i.value === selectedItem.value);
+		let resumeCommand = '';
+
+		if (source === 'claude') {
+			resumeCommand = `claude --resume ${selectedItem.session.id}`;
+		} else if (source === 'codex') {
+			resumeCommand = `codex resume ${selectedItem.session.id}`;
+		} else if (source === 'cursor') {
+			resumeCommand = `cursor-agent --resume=${selectedItem.session.id}`;
+		} else if (source === 'gemini') {
+			const index = getIndexIn(geminiItems);
+			const resumeArg = index >= 0 ? String(index + 1) : 'latest';
+			resumeCommand = `gemini --resume ${resumeArg}`;
+		}
+
+		const output = `\n\n${englishPrompt}\n\n${chinesePrompt}\n\n${resumeCommand}\n\n`;
 
 		onSubmit?.(output);
 		exit();

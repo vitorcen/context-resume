@@ -1,6 +1,6 @@
 {
   "name": "@vitorcen/context-resume",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Context Resume CLI - Browse and mutually restore the conversation history of Claude Code and Codex",
   "main": "dist/index.js",
   "type": "module",
@@ -40,7 +40,8 @@
     "ink": "^6.5.1",
     "ink-box": "^1.0.0",
     "ink-select-input": "^6.2.0",
-    "react": "^19.2.1"
+    "react": "^19.2.1",
+    "string-width": "^8.1.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

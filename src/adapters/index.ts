@@ -106,6 +106,12 @@ export async function getClaudeSessions(cwd: string, limit: number = 10): Promis
       }
     }
 
+    const cleanedPrompts = userPrompts
+      .map(p => p.trim())
+      .filter(p => p && p.toLowerCase() !== 'warmup' && p.toLowerCase() !== 'new session');
+
+    if (cleanedPrompts.length === 0) continue;
+
     // Create preview: Start ... End
     const preview = createPreview(fullContent);
     const stats = fs.statSync(filePath);
@@ -114,7 +120,7 @@ export async function getClaudeSessions(cwd: string, limit: number = 10): Promis
       id: path.basename(file, '.jsonl'),
       title: firstUserMessage.slice(0, 50) + (firstUserMessage.length > 50 ? '...' : ''),
       preview,
-      userPrompts,
+      userPrompts: cleanedPrompts,
       timestamp: stats.mtimeMs,
       source: 'claude',
       path: filePath

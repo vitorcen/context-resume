@@ -26,6 +26,41 @@ function createPreview(content: string, maxLength: number = 500): string {
   return `${start}\n\n... [${content.length - maxLength} characters omitted] ...\n\n${end}`;
 }
 
+function readFirstNonEmptyLine(filePath: string, maxBytes: number = 5 * 1024 * 1024): string | null {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(64 * 1024);
+    let position = 0;
+    let totalBytes = 0;
+    let acc = '';
+
+    while (totalBytes < maxBytes) {
+      const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, position);
+      if (bytesRead <= 0) {
+        break;
+      }
+
+      position += bytesRead;
+      totalBytes += bytesRead;
+      acc += buffer.subarray(0, bytesRead).toString('utf-8');
+
+      let newlineIndex = acc.indexOf('\n');
+      while (newlineIndex !== -1) {
+        const line = acc.slice(0, newlineIndex);
+        if (line.trim() !== '') {
+          return line;
+        }
+        acc = acc.slice(newlineIndex + 1);
+        newlineIndex = acc.indexOf('\n');
+      }
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+
+  return null;
+}
+
 // --- Claude Adapter ---
 
 function normalizeCwd(cwd: string): string {
@@ -156,23 +191,17 @@ export async function getCodexSessions(cwd: string, limit: number = 10): Promise
     const relevantFiles: { filePath: string, mtime: number }[] = [];
 
     for (const filePath of files) {
-        // We need to peek at the first line to check CWD
+        // Read the first non-empty line (session_meta can exceed 4KB).
         try {
-            const fd = fs.openSync(filePath, 'r');
-            const buffer = Buffer.alloc(4096); // Read first 4KB
-            const bytesRead = fs.readSync(fd, buffer, 0, 4096, 0);
-            fs.closeSync(fd);
-
-            const chunk = buffer.toString('utf-8', 0, bytesRead);
-            const firstLine = chunk.split('\n')[0];
-
-            if (firstLine) {
-                const meta = JSON.parse(firstLine);
-                const metaCwd = typeof meta.payload?.cwd === 'string' ? normalizeCwd(meta.payload.cwd) : '';
-                if (meta.type === 'session_meta' && metaCwd === resolvedCwd) {
-                     const stats = fs.statSync(filePath);
-                     relevantFiles.push({ filePath, mtime: stats.mtimeMs });
-                }
+            const firstLine = readFirstNonEmptyLine(filePath);
+            if (!firstLine) {
+                continue;
+            }
+            const meta = JSON.parse(firstLine);
+            const metaCwd = typeof meta.payload?.cwd === 'string' ? normalizeCwd(meta.payload.cwd) : '';
+            if (meta.type === 'session_meta' && metaCwd === resolvedCwd) {
+                const stats = fs.statSync(filePath);
+                relevantFiles.push({ filePath, mtime: stats.mtimeMs });
             }
         } catch (e) {
             // ignore
